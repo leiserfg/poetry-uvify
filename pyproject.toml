@@ -21,5 +21,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.plugins."poetry.application.plugin"]
 uvify = "poetry_uvify.plugins:UvifyPlugin"
 
+
 [tool.poetry.extras]
+# not really used, just for testing that extras work
 test = ["pytest"]

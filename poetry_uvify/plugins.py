@@ -49,7 +49,7 @@ class Uvifyer:
 
         main_group = groups.pop(MAIN_GROUP)
 
-        all_extras = set(chain.from_iterable(extra_groups.values()))
+        all_extras = set(d.name for d in chain.from_iterable(extra_groups.values()))
 
         project = {
             "name": self.pkg.name,
