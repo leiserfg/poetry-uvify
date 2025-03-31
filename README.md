@@ -6,11 +6,15 @@ How to use it:
 
 To check what will be the outcome
 ```sh
-uvx --with=git+https://github.com/leiserfg/poetry-uvify poetry uvify
+uvx --python 312 --with=git+https://github.com/leiserfg/poetry-uvify poetry uvify
 ```
 
 To really apply it.
 
 ```sh
-uvx --with=git+https://github.com/leiserfg/poetry-uvify poetry uvify -r
+uvx --python 312 --with=git+https://github.com/leiserfg/poetry-uvify poetry uvify -r
+
 ```
+
+
+Note: We are fixing python version in the command to avoid rebuilding one of the dependencies of poetry.
