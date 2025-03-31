@@ -2,6 +2,7 @@ from copy import deepcopy
 from poetry.console.commands.command import Command
 from poetry.plugins.application_plugin import ApplicationPlugin
 from cleo.helpers import option
+from itertools import chain
 
 MAIN_GROUP = "main"
 
@@ -14,18 +15,22 @@ class Uvifyer:
 
     def _dep_groups(self) -> dict[str, list[str]]:
         groups = {
-            group_name: self._get_pep508_deps(group_name)
+            group_name: self._get_deps(group_name)
             for group_name in self.poetry.package.dependency_group_names()
         }
         return groups
 
-    def _get_pep508_deps(self, group_name) -> list[str]:
-        deps = []
-        for dep in self.poetry.package.dependency_group(group_name).dependencies:
+    def _extra_groups(self) -> dict[str, list[str]]:
+        return self.poetry.package.extras
+
+    def _get_deps(self, group_name) -> dict[str, str]:
+        deps = self.poetry.package.dependency_group(group_name).dependencies
+        res = {}
+        for dep in deps:
             if dep.source_name:
                 self.package_sources[dep.name] = dep.source_name
-            deps.append(dep.base_pep_508_name_resolved)
-        return deps
+            res[dep.name] = dep.base_pep_508_name_resolved
+        return res
 
     def _parse_person_entry(self, entry) -> dict[str, str]:
         """
@@ -40,13 +45,20 @@ class Uvifyer:
 
     def project_fragment(self):
         groups = self._dep_groups()
+        extra_groups = self._extra_groups()
+
         main_group = groups.pop(MAIN_GROUP)
+
+        all_extras = set(chain.from_iterable(extra_groups.values()))
+
         project = {
             "name": self.pkg.name,
             "version": self.pkg.version.text,
             "description": self.pkg.description,
             "requires-python": str(self.pkg.python_constraint),
-            "dependencies": list(main_group),
+            "dependencies": [
+                pep508 for name, pep508 in main_group.items() if name not in all_extras
+            ],
         }
         if self.pkg.readme:
             project["readme"] = str(self.pkg.readme.relative_to(self.pkg.root_dir))
@@ -60,7 +72,15 @@ class Uvifyer:
             ]
 
         if groups:
-            project["optional-dependencies"] = groups
+            project["dependency-groups"] = {
+                gn: list(deps.values()) for gn, deps in groups.items()
+            }
+
+        if extra_groups:
+            project["optional-dependencies"] = {
+                gn: [d.base_pep_508_name_resolved for d in deps]
+                for gn, deps in extra_groups.items()
+            }
 
         if scripts := self.poetry.local_config.get("scripts"):
             project["scripts"] = scripts
