@@ -101,7 +101,12 @@ class Uvifyer:
         toml["tool"].pop("poetry")
         toml.pop("build-system")
 
-        toml["project"] = self.project_fragment()
+        proj = self.project_fragment()
+        dep_groups = proj.pop("dependency-groups", None)
+        toml["project"] = proj
+
+        if dep_groups:
+            toml["dependency-groups"] = dep_groups
 
         uv_tool = {}
         if indexes := self.index_fragment():
